@@ -1,12 +1,12 @@
 from ast import alias
 
-from pyspark.sql.function import col, count, round as spark_round, sum as spark_sum
+from pyspark.sql.functions import col, count, round as spark_round, sum as spark_sum
 from ecommerce_etl.spark_session import get_spark_session
 
 
 def get_gold_data(
     input_path: str = "data/silver/orders",
-    output_path: str = "data/gold"
+    output_dir: str = "data/gold"
 ) -> None:
     spark = get_spark_session("GoldAggregation")
     
@@ -14,10 +14,10 @@ def get_gold_data(
     
     # Daily revenue totals
     daily_revenue = (
-        silver_df.groupBy("orders_date").agg(
+        silver_df.groupBy("order_date").agg(
             spark_round(spark_sum("total_price"), 2).alias("total_revenue"),
             count("order_id").alias("total_orders")
-        ).orderBy("order_date")
+        ).orderBy(col("order_date").asc())
     )
     
     
@@ -32,8 +32,6 @@ def get_gold_data(
     
         
     
-    
-    
     # Revenue by Channel
     revenue_by_channel = (
         silver_df.groupBy("channel").agg(
@@ -44,16 +42,13 @@ def get_gold_data(
     
     
     
-    
      # Revenue by Country
-    revenue_by_country = {
+    revenue_by_country = (
         silver_df.groupBy("country").agg(
             spark_round(spark_sum("total_price"), 2).alias("total_revenue"),
             count("order_id").alias("total_orders")
         ).orderBy(col("total_revenue").desc())
-    }
-    
-    
+    )
     
     
     
@@ -65,4 +60,14 @@ def get_gold_data(
         "revenue_by_country": revenue_by_country
     }
     
-    for name, df in tables.items()
+    
+    
+    for name, df in tables.items():
+        path = f"{output_dir}/{name}"
+        df.write.format("delta").mode("overwrite").option("overwriteSchem", "true").save(path)
+        print(f"Gold: {name} saved to {path} ({df.count()} rows)")
+        
+    spark.stop()
+    
+if __name__ == "__main__":
+    get_gold_data()

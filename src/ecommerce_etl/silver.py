@@ -5,7 +5,7 @@ from ecommerce_etl.spark_session import get_spark_session
 
 def get_silver_data(
     input_path: str = "data/bronze/orders",
-    output_path: str = "data/bronze/orders",
+    output_path: str = "data/silver/orders",
 ) -> None:
     spark = get_spark_session("SilverCleaning")
     bronze_df = spark.read.format("delta").load(input_path)

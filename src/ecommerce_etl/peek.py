@@ -12,7 +12,7 @@ def peek(table_path: str, num_rows: int =10) -> None:
     df.printSchema()
     
     print(f"\nFirst {num_rows} rows:")
-    df.show(num_rows, truncate=False)
+    df.show(num_rows, truncate=False, vertical = True)
     
     print(f"Total rows: {df.count()}")
     
